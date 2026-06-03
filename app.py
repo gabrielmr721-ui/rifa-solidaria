@@ -14,11 +14,11 @@ DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:973776580Ga@db.y
 
 def get_db():
     if DATABASE_URL:
-        # Força o uso de SSL requerido pelo Supabase para evitar rejeição de conexão
         if "sslmode" not in DATABASE_URL:
             connect_url = DATABASE_URL + "?sslmode=require"
         else:
             connect_url = DATABASE_URL
+        # Usamos DictCursor para que funcione tanto por índice quanto por nome de coluna
         conn = psycopg2.connect(connect_url, cursor_factory=DictCursor)
         return conn
     else:
@@ -31,7 +31,6 @@ def init_db():
     conn = get_db()
     cursor = conn.cursor()
     
-    # Cria a tabela no formato padrão do PostgreSQL
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS numeros (
             id INTEGER PRIMARY KEY,
@@ -55,7 +54,6 @@ def init_db():
     cursor.close()
     conn.close()
 
-# Executa com tratamento para não derrubar o app se o banco demorar a responder
 try:
     init_db()
 except Exception as e:
@@ -65,7 +63,7 @@ except Exception as e:
 def index():
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM numeros ORDER BY id ASC')
+    cursor.execute('SELECT id, nome, fone FROM numeros ORDER BY id ASC')
     numeros = cursor.fetchall()
     
     cursor.execute('SELECT COUNT(*) FROM numeros WHERE nome IS NOT NULL')
@@ -131,7 +129,7 @@ def painel():
         
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM numeros ORDER BY id ASC')
+    cursor.execute('SELECT id, nome, fone FROM numeros ORDER BY id ASC')
     numeros = cursor.fetchall()
     
     cursor.execute('SELECT COUNT(*) FROM numeros WHERE nome IS NOT NULL')
