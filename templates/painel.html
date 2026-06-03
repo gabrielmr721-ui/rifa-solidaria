@@ -1,43 +1,328 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-<title>Painel</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Nunito', Arial, sans-serif;
+            background: #f0f4f8;
+            color: #2d3748;
+        }
+
+        /* ── Cabeçalho ── */
+        header {
+            background: #1a202c;
+            color: #fff;
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        header h1 { font-size: 1.3rem; }
+
+        .header-links { display: flex; gap: 12px; }
+
+        .header-links a {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .btn-sair    { background: #718096; color: #fff; }
+        .btn-sair:hover { background: #4a5568; }
+
+        .btn-reset   { background: #e53e3e; color: #fff; }
+        .btn-reset:hover { background: #c53030; }
+
+        .btn-rifa    { background: #38a169; color: #fff; }
+        .btn-rifa:hover { background: #2f855a; }
+
+        /* ── Contadores ── */
+        .contadores {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            padding: 20px 24px;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .cbox {
+            padding: 14px 24px;
+            border-radius: 10px;
+            text-align: center;
+            min-width: 120px;
+        }
+        .cbox.verde   { background: #c6f6d5; color: #276749; }
+        .cbox.vermelho { background: #fed7d7; color: #822727; }
+
+        .cbox .n { font-size: 2rem; font-weight: 900; line-height: 1; }
+        .cbox .l { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-top: 4px; }
+
+        /* ── Seção ── */
+        .secao {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+            margin: 20px 20px 0;
+            padding: 22px 24px;
+        }
+
+        .secao h2 {
+            font-size: 1.1rem;
+            margin-bottom: 16px;
+            color: #1a202c;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        /* ── Formulário de venda manual ── */
+        .form-linha {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .form-grupo {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            min-width: 140px;
+        }
+
+        label {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #4a5568;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        input[type="text"],
+        input[type="tel"],
+        select {
+            padding: 10px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            background: #fff;
+            transition: border-color 0.2s;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #38a169;
+        }
+
+        .btn-verde {
+            padding: 11px 22px;
+            background: #38a169;
+            color: #fff;
+            font-weight: 900;
+            font-size: 0.95rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+        .btn-verde:hover { background: #2f855a; }
+
+        /* ── Lista de vendidos ── */
+        .lista-vendidos {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .item-vendido {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px 14px;
+            gap: 10px;
+        }
+
+        .item-vendido .num-tag {
+            background: #e53e3e;
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 900;
+            font-size: 0.95rem;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .item-vendido .info {
+            flex: 1;
+        }
+
+        .item-vendido .info .comprador {
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .item-vendido .info .fone {
+            font-size: 0.82rem;
+            color: #718096;
+            margin-top: 2px;
+        }
+
+        .btn-liberar {
+            padding: 6px 14px;
+            background: #fed7d7;
+            color: #c53030;
+            font-weight: 700;
+            font-size: 0.82rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+        .btn-liberar:hover { background: #fc8181; color: #742a2a; }
+
+        .vazio {
+            color: #a0aec0;
+            font-style: italic;
+            text-align: center;
+            padding: 20px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 24px;
+            color: #a0aec0;
+            font-size: 0.82rem;
+        }
+
+        /* ── Responsivo ── */
+        @media (max-width: 480px) {
+            .secao { margin: 14px 12px 0; padding: 16px; }
+            .contadores { padding: 14px 12px; }
+            header { padding: 14px 16px; }
+        }
+    </style>
 </head>
 <body>
 
-<h1>Painel Administrativo</h1>
+<!-- ── CABEÇALHO ── -->
+<header>
+    <h1>🛠️ Painel Administrativo</h1>
+    <div class="header-links">
+        <a href="/" class="btn-rifa">🎟️ Ver Rifa</a>
+        <a href="/logout" class="btn-sair">🚪 Sair</a>
+        <a href="/resetar"
+           class="btn-reset"
+           onclick="return confirm('Tem certeza? Isso vai liberar TODOS os números!')">
+            🔄 Resetar Tudo
+        </a>
+    </div>
+</header>
 
-<a href="/resetar">
-Resetar Rifa
-</a>
+<!-- ── CONTADORES ── -->
+<div class="contadores">
+    <div class="cbox verde">
+        <div class="n">{{ disponiveis }}</div>
+        <div class="l">✅ Disponíveis</div>
+    </div>
+    <div class="cbox vermelho">
+        <div class="n">{{ vendidos }}</div>
+        <div class="l">🔴 Vendidos</div>
+    </div>
+</div>
 
-|
+<!-- ── ADICIONAR VENDA MANUAL ── -->
+<div class="secao">
+    <h2>📲 Registrar Venda Manual (WhatsApp)</h2>
 
-<a href="/logout">
-Sair
-</a>
+    <form action="/venda_manual" method="POST">
+        <div class="form-linha">
 
-<hr>
+            <div class="form-grupo">
+                <label for="nome">Nome do comprador</label>
+                <input type="text" id="nome" name="nome" placeholder="Ex: Maria Santos" required>
+            </div>
 
-{% for numero in numeros %}
+            <div class="form-grupo">
+                <label for="fone">WhatsApp</label>
+                <input type="tel" id="fone" name="fone" placeholder="(11) 99999-9999">
+            </div>
 
-{% if numero[1] != None %}
+            <div class="form-grupo">
+                <label for="numero">Número</label>
+                <select id="numero" name="numero" required>
+                    {% for numero in numeros %}
+                        {% if numero['nome'] is none %}
+                            <option value="{{ numero['id'] }}">Número {{ numero['id'] }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
 
-<p>
+            <button type="submit" class="btn-verde">✅ Registrar</button>
 
-Número {{ numero[0] }}
--
-{{ numero[1] }}
+        </div>
+    </form>
+</div>
 
-<a href="/liberar/{{ numero[0] }}">
-Liberar
-</a>
+<!-- ── LISTA DE NÚMEROS VENDIDOS ── -->
+<div class="secao" style="margin-bottom: 20px;">
+    <h2>🔴 Números Vendidos ({{ vendidos }})</h2>
 
-</p>
+    <div class="lista-vendidos">
+        {% set teve_vendido = namespace(value=false) %}
 
-{% endif %}
+        {% for numero in numeros %}
+            {% if numero['nome'] is not none %}
+                {% set teve_vendido.value = true %}
+                <div class="item-vendido">
+                    <span class="num-tag">{{ numero['id'] }}</span>
 
-{% endfor %}
+                    <div class="info">
+                        <div class="comprador">{{ numero['nome'] }}</div>
+                        {% if numero['fone'] %}
+                            <div class="fone">📱 {{ numero['fone'] }}</div>
+                        {% endif %}
+                    </div>
+
+                    <a href="/liberar/{{ numero['id'] }}"
+                       class="btn-liberar"
+                       onclick="return confirm('Liberar o número {{ numero[\'id\'] }}?')">
+                        ❌ Liberar
+                    </a>
+                </div>
+            {% endif %}
+        {% endfor %}
+
+        {% if not teve_vendido.value %}
+            <p class="vazio">Nenhum número vendido ainda.</p>
+        {% endif %}
+    </div>
+</div>
+
+<footer>Painel Administrativo — Rifa Solidária</footer>
 
 </body>
 </html>

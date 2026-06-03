@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservar Número {{ numero }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Nunito', Arial, sans-serif;
+            background: #f0f4f8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 36px 32px;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            text-align: center;
+        }
+
+        .numero-destaque {
+            font-size: 4rem;
+            font-weight: 900;
+            color: #38a169;
+            line-height: 1;
+        }
+
+        h2 {
+            margin: 12px 0 24px;
+            color: #2d3748;
+            font-size: 1.2rem;
+        }
+
+        label {
+            display: block;
+            text-align: left;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #4a5568;
+            margin-bottom: 6px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: inherit;
+            margin-bottom: 16px;
+            transition: border-color 0.2s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #38a169;
+        }
+
+        .btn-confirmar {
+            width: 100%;
+            padding: 14px;
+            background: #38a169;
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 900;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-confirmar:hover { background: #2f855a; }
+
+        .voltar {
+            display: block;
+            margin-top: 16px;
+            color: #718096;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .voltar:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="numero-destaque">🎟️ {{ numero }}</div>
+    <h2>Preencha seus dados para reservar</h2>
+
+    <form action="/reservar/{{ numero }}" method="POST">
+
+        <label for="nome">Seu nome completo *</label>
+        <input type="text" id="nome" name="nome" placeholder="Ex: João da Silva" required>
+
+        <label for="fone">WhatsApp (opcional)</label>
+        <input type="tel" id="fone" name="fone" placeholder="Ex: (11) 99999-9999">
+
+        <button type="submit" class="btn-confirmar">
+            ✅ Confirmar Reserva
+        </button>
+
+    </form>
+
+    <a href="/" class="voltar">← Voltar para a rifa</a>
+</div>
+
+</body>
+</html>

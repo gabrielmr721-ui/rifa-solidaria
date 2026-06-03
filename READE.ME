@@ -1,0 +1,60 @@
+# Rifa Solidária — Guia Rápido
+
+## Estrutura de arquivos
+
+rifa-solidaria/
+├── app.py
+├── database.db          (criado automaticamente)
+├── requirements.txt
+├── gunicorn.conf.py
+├── static/
+│   └── imagens/
+│       └── rifa.jpg     ← coloque sua imagem aqui
+└── templates/
+    ├── index.html
+    ├── admin.html
+    ├── painel.html
+    └── reservar.html
+
+
+## Subir para o GitHub (rode no terminal dentro da pasta)
+
+1. Inicializar o Git (só na primeira vez):
+   git init
+
+2. Adicionar todos os arquivos:
+   git add .
+
+3. Fazer o primeiro commit:
+   git commit -m "Primeira versão da rifa solidária"
+
+4. Conectar ao seu repositório GitHub:
+   git remote add origin https://github.com/SEU-USUARIO/rifa-solidaria.git
+
+5. Enviar:
+   git branch -M main
+   git push -u origin main
+
+   (nas próximas atualizações, só precisa de: git add . && git commit -m "..." && git push)
+
+
+## Configurar no Render
+
+1. Acesse https://render.com e crie um serviço Web.
+2. Conecte sua conta GitHub e selecione o repositório.
+3. Configure:
+
+   Build Command:   pip install -r requirements.txt
+   Start Command:   gunicorn -c gunicorn.conf.py app:app
+
+4. Em "Environment Variables", adicione:
+   ADMIN_PASSWORD = (sua senha forte aqui)
+   SECRET_KEY     = (qualquer texto aleatório longo)
+
+5. Clique em Deploy.
+
+
+## Acessar o painel admin
+
+URL: https://seu-site.onrender.com/admin
+Senha: o que você definiu em ADMIN_PASSWORD
