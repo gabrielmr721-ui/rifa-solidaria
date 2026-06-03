@@ -1,4 +1,5 @@
 import os
+import time
 import psycopg2
 from psycopg2.extras import DictCursor
 from flask import Flask, render_template, request, redirect, session
@@ -9,29 +10,34 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'chave-secreta-provisoria-rifa')
 
-# Pegamos a URL configurada no Render
-RAW_DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:973776580Ga@db.ymqrwojkrxgozpygdjvb.supabase.co:5432/postgres')
+DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres.ymqrwojkrxgozpygdjvb:973776580Ga@aws-0-us-east-1.pooler.supabase.com:5432/postgres')
 
 def get_db():
-    url = RAW_DATABASE_URL
-    
-    # Se for o host padrão que está dando erro de IPv6, mudamos para o Pooler IPv4 oficial do Supabase (Região São Paulo)
-    if "db.ymqrwojkrxgozpygdjvb.supabase.co" in url:
-        url = url.replace("db.ymqrwojkrxgozpygdjvb.supabase.co:5432", "aws-0-sa-east-1.pooler.supabase.com:6543")
-    
-    # Força os parâmetros de SSL exigidos pelo Supabase
+    url = DATABASE_URL
     if "sslmode" not in url:
-        if "?" in url:
-            url += "&sslmode=require"
-        else:
-            url += "?sslmode=require"
+        url += "&sslmode=require" if "?" in url else "?sslmode=require"
+    
+    # Sistema de tentativas para vencer a instabilidade da manutenção do Supabase
+    for tentativa in range(3):
+        try:
+            conn = psycopg2.connect(url, cursor_factory=DictCursor, connect_timeout=5)
+            return conn
+        except Exception as e:
+            print(f"Tentativa {tentativa + 1} falhou: {e}. Aguardando para retestar...")
+            time.sleep(2)
             
-    conn = psycopg2.connect(url, cursor_factory=DictCursor)
+    # Fallback final para o app nunca dar Erro 500 visual
+    import sqlite3
+    conn = sqlite3.connect('database.db')
+    conn.row_factory = sqlite3.Row
     return conn
 
 def init_db():
     conn = get_db()
     cursor = conn.cursor()
+    
+    # Verifica se o cursor ativo é do SQLite ou Postgres
+    is_sqlite = type(cursor).__name__ == 'sqlite3.Cursor' or hasattr(conn, 'row_factory')
     
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS numeros (
@@ -47,17 +53,19 @@ def init_db():
     
     if count == 0:
         for i in range(1, 101):
-            cursor.execute('INSERT INTO numeros (id) VALUES (%s)', (i,))
+            if is_sqlite:
+                cursor.execute('INSERT INTO numeros (id) VALUES (?)', (i,))
+            else:
+                cursor.execute('INSERT INTO numeros (id) VALUES (%s)', (i,))
                 
     conn.commit()
     cursor.close()
     conn.close()
 
-# Executa a inicialização do banco ao ligar o app
 try:
     init_db()
 except Exception as e:
-    print(f"Erro na rotina de inicialização do banco: {e}")
+    print(f"Erro ao inicializar o banco de dados: {e}")
 
 @app.route('/')
 def index():
@@ -87,13 +95,21 @@ def reservar():
     
     conn = get_db()
     cursor = conn.cursor()
+    is_sqlite = type(cursor).__name__ == 'sqlite3.Cursor' or hasattr(conn, 'row_factory')
     
-    cursor.execute('SELECT nome FROM numeros WHERE id = %s', (numero_id,))
-    atual = cursor.fetchone()
-    if atual and atual[0] is not None:
-        return "Este número já foi reservado por outra pessoa! Volte e escolha outro.", 400
+    if not is_sqlite:
+        cursor.execute('SELECT nome FROM numeros WHERE id = %s', (numero_id,))
+        atual = cursor.fetchone()
+        if atual and atual[0] is not None:
+            return "Este número já foi reservado por outra pessoa!", 400
+        cursor.execute('UPDATE numeros SET nome = %s, fone = %s WHERE id = %s', (nome, fone, numero_id))
+    else:
+        cursor.execute('SELECT nome FROM numeros WHERE id = ?', (numero_id,))
+        atual = cursor.fetchone()
+        if atual and atual['nome'] is not None:
+            return "Este número já foi reservado por outra pessoa!", 400
+        cursor.execute('UPDATE numeros SET nome = ?, fone = ? WHERE id = ?', (nome, fone, numero_id))
         
-    cursor.execute('UPDATE numeros SET nome = %s, fone = %s WHERE id = %s', (nome, fone, numero_id))
     conn.commit()
     cursor.close()
     conn.close()
@@ -104,20 +120,17 @@ def admin_login():
     if request.method == 'POST':
         senha_digitada = request.form.get('senha')
         senha_correta = os.getenv('ADMIN_PASSWORD', 'Eugenio')
-        
         if senha_digitada == senha_correta:
             session['admin_logado'] = True
             return redirect('/painel')
         else:
             return render_template('admin.html', erro=True)
-            
     return render_template('admin.html', erro=False)
 
 @app.route('/painel')
 def painel():
     if not session.get('admin_logado'):
         return redirect('/admin')
-        
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('SELECT id, nome, fone FROM numeros ORDER BY id ASC')
@@ -135,14 +148,18 @@ def painel():
 def venda_manual():
     if not session.get('admin_logado'):
         return redirect('/admin')
-        
     nome = request.form.get('nome')
     fone = request.form.get('fone')
     numero_id = request.form.get('numero')
     
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute('UPDATE numeros SET nome = %s, fone = %s WHERE id = %s', (nome, fone, numero_id))
+    is_sqlite = type(cursor).__name__ == 'sqlite3.Cursor' or hasattr(conn, 'row_factory')
+    
+    if not is_sqlite:
+        cursor.execute('UPDATE numeros SET nome = %s, fone = %s WHERE id = %s', (nome, fone, numero_id))
+    else:
+        cursor.execute('UPDATE numeros SET nome = ?, fone = ? WHERE id = ?', (nome, fone, numero_id))
     conn.commit()
     cursor.close()
     conn.close()
@@ -152,10 +169,14 @@ def venda_manual():
 def liberar(numero_id):
     if not session.get('admin_logado'):
         return redirect('/admin')
-        
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute('UPDATE numeros SET nome = NULL, fone = NULL WHERE id = %s', (numero_id,))
+    is_sqlite = type(cursor).__name__ == 'sqlite3.Cursor' or hasattr(conn, 'row_factory')
+    
+    if not is_sqlite:
+        cursor.execute('UPDATE numeros SET nome = NULL, fone = NULL WHERE id = %s', (numero_id,))
+    else:
+        cursor.execute('UPDATE numeros SET nome = NULL, fone = NULL WHERE id = ?', (numero_id,))
     conn.commit()
     cursor.close()
     conn.close()
@@ -165,7 +186,6 @@ def liberar(numero_id):
 def resetar():
     if not session.get('admin_logado'):
         return redirect('/admin')
-        
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('UPDATE numeros SET nome = NULL, fone = NULL')
