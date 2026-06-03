@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Rifa Solidária</title>
+
+<style>
+
+body{
+    font-family:Arial;
+    background:#f4f4f4;
+    text-align:center;
+}
+
+.imagem{
+    width:90%;
+    max-width:600px;
+    margin-top:20px;
+    border-radius:15px;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(80px,1fr));
+    gap:10px;
+    max-width:1000px;
+    margin:auto;
+}
+
+.numero{
+    padding:15px;
+    border-radius:10px;
+    color:white;
+}
+
+.disponivel{
+    background:green;
+}
+
+.ocupado{
+    background:red;
+}
+
+</style>
+
+</head>
+<body>
+
+<img
+src="{{ url_for('static', filename='imagens/rifa.jpg') }}"
+class="imagem">
+
+<h1>Rifa Solidária</h1>
+
+<form action="/reservar" method="POST">
+
+<input
+type="text"
+name="nome"
+placeholder="Seu nome"
+required>
+
+<select name="numero">
+
+{% for numero in numeros %}
+
+{% if numero[1] == None %}
+
+<option value="{{ numero[0] }}">
+{{ numero[0] }}
+</option>
+
+{% endif %}
+
+{% endfor %}
+
+</select>
+
+<button type="submit">
+Reservar
+</button>
+
+</form>
+
+<br>
+
+<div class="grid">
+
+{% for numero in numeros %}
+
+<div class="numero {% if numero[1] == None %}disponivel{% else %}ocupado{% endif %}">
+
+{{ numero[0] }}
+
+</div>
+
+{% endfor %}
+
+</div>
+
+</body>
+</html>

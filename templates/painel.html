@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Painel</title>
+</head>
+<body>
+
+<h1>Painel Administrativo</h1>
+
+<a href="/resetar">
+Resetar Rifa
+</a>
+
+|
+
+<a href="/logout">
+Sair
+</a>
+
+<hr>
+
+{% for numero in numeros %}
+
+{% if numero[1] != None %}
+
+<p>
+
+Número {{ numero[0] }}
+-
+{{ numero[1] }}
+
+<a href="/liberar/{{ numero[0] }}">
+Liberar
+</a>
+
+</p>
+
+{% endif %}
+
+{% endfor %}
+
+</body>
+</html>
