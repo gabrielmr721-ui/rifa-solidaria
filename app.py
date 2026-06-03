@@ -47,7 +47,7 @@ def index():
 def tela_reserva(numero_id):
     return render_template('reservar.html', numero_id=numero_id)
 
-@app.route('/reservar', method=['POST'])
+@app.route('/reservar', methods=['POST'])
 def reservar():
     numero_id = request.form.get('numero_id')
     nome = request.form.get('nome')
