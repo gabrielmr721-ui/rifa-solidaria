@@ -9,19 +9,28 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'chave-secreta-provisoria-rifa')
 
-# Pega a URL do Render ou o plano B do Supabase
-DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:973776580Ga@db.ymqrwojkrxgozpygdjvb.supabase.co:5432/postgres')
+# Link original do Supabase
+BASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:973776580Ga@db.ymqrwojkrxgozpygdjvb.supabase.co:5432/postgres')
 
 def get_db():
-    if DATABASE_URL:
-        if "sslmode" not in DATABASE_URL:
-            connect_url = DATABASE_URL + "?sslmode=require"
+    # Modifica a URL para usar o Pooler/IPv4 se for o domínio padrão do Supabase
+    url = BASE_URL
+    if "supabase.co:5432" in url:
+        # Troca a porta 5432 por 6543 (Porta do Pooler do Supabase que suporta melhor IPv4/IPv6 mistos)
+        url = url.replace(":5432", ":6543")
+    
+    # Adiciona os parâmetros necessários de SSL e timeout de conexão
+    if "sslmode" not in url:
+        if "?" in url:
+            url += "&sslmode=require&connect_timeout=10"
         else:
-            connect_url = DATABASE_URL
-        # Usamos DictCursor para que funcione tanto por índice quanto por nome de coluna
-        conn = psycopg2.connect(connect_url, cursor_factory=DictCursor)
+            url += "?sslmode=require&connect_timeout=10"
+            
+    try:
+        conn = psycopg2.connect(url, cursor_factory=DictCursor)
         return conn
-    else:
+    except Exception as e:
+        print(f"Falha na conexão PostgreSQL Nuvem. Tentando fallback SQLite local... Erro: {e}")
         import sqlite3
         conn = sqlite3.connect('database.db')
         conn.row_factory = sqlite3.Row
@@ -31,21 +40,33 @@ def init_db():
     conn = get_db()
     cursor = conn.cursor()
     
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS numeros (
-            id INTEGER PRIMARY KEY,
-            nome TEXT DEFAULT NULL,
-            fone TEXT DEFAULT NULL
-        )
-    ''')
+    # Verifica se estamos usando SQLite ou PostgreSQL para criar a sintaxe correta
+    is_sqlite = hasattr(conn, 'execute') or type(cursor).__name__ == 'sqlite3.Cursor'
     
-    cursor.execute('SELECT COUNT(*) FROM numeros')
-    row = cursor.fetchone()
-    count = row[0] if row else 0
-    
+    if is_sqlite:
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS numeros (
+                id INTEGER PRIMARY KEY,
+                nome TEXT DEFAULT NULL,
+                fone TEXT DEFAULT NULL
+            )
+        ''')
+        cursor.execute('SELECT COUNT(*) FROM numeros')
+        count = cursor.fetchone()[0]
+    else:
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS numeros (
+                id id_placeholder PRIMARY KEY,
+                nome TEXT DEFAULT NULL,
+                fone TEXT DEFAULT NULL
+            )
+        '''.replace("id_placeholder", "INTEGER"))
+        cursor.execute('SELECT COUNT(*) FROM numeros')
+        count = cursor.fetchone()[0]
+        
     if count == 0:
         for i in range(1, 101):
-            if DATABASE_URL:
+            if not is_sqlite and type(cursor).__name__ != 'sqlite3.Cursor':
                 cursor.execute('INSERT INTO numeros (id) VALUES (%s)', (i,))
             else:
                 cursor.execute('INSERT INTO numeros (id) VALUES (?)', (i,))
@@ -54,10 +75,11 @@ def init_db():
     cursor.close()
     conn.close()
 
+# Executa de forma segura
 try:
     init_db()
 except Exception as e:
-    print(f"Erro ao inicializar o banco de dados: {e}")
+    print(f"Erro na rotina de inicialização: {e}")
 
 @app.route('/')
 def index():
@@ -88,7 +110,10 @@ def reservar():
     conn = get_db()
     cursor = conn.cursor()
     
-    if DATABASE_URL:
+    # Detecta dinamicamente se a conexão ativa é SQLite ou Postgres
+    is_postgres = type(cursor).__name__ != 'sqlite3.Cursor' and not hasattr(conn, 'row_factory')
+    
+    if is_postgres:
         cursor.execute('SELECT nome FROM numeros WHERE id = %s', (numero_id,))
         atual = cursor.fetchone()
         if atual and atual[0] is not None:
@@ -151,10 +176,12 @@ def venda_manual():
     
     conn = get_db()
     cursor = conn.cursor()
-    if DATABASE_URL:
+    
+    if type(cursor).__name__ != 'sqlite3.Cursor' and not hasattr(conn, 'row_factory'):
         cursor.execute('UPDATE numeros SET nome = %s, fone = %s WHERE id = %s', (nome, fone, numero_id))
     else:
         cursor.execute('UPDATE numeros SET nome = ?, fone = ? WHERE id = ?', (nome, fone, numero_id))
+        
     conn.commit()
     cursor.close()
     conn.close()
@@ -167,10 +194,12 @@ def liberar(numero_id):
         
     conn = get_db()
     cursor = conn.cursor()
-    if DATABASE_URL:
+    
+    if type(cursor).__name__ != 'sqlite3.Cursor' and not hasattr(conn, 'row_factory'):
         cursor.execute('UPDATE numeros SET nome = NULL, fone = NULL WHERE id = %s', (numero_id,))
     else:
         cursor.execute('UPDATE numeros SET nome = NULL, fone = NULL WHERE id = ?', (numero_id,))
+        
     conn.commit()
     cursor.close()
     conn.close()
