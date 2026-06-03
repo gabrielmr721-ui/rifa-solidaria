@@ -9,77 +9,55 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'chave-secreta-provisoria-rifa')
 
-# Link original do Supabase
-BASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:973776580Ga@db.ymqrwojkrxgozpygdjvb.supabase.co:5432/postgres')
+# Pegamos a URL configurada no Render
+RAW_DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:973776580Ga@db.ymqrwojkrxgozpygdjvb.supabase.co:5432/postgres')
 
 def get_db():
-    # Modifica a URL para usar o Pooler/IPv4 se for o domínio padrão do Supabase
-    url = BASE_URL
-    if "supabase.co:5432" in url:
-        # Troca a porta 5432 por 6543 (Porta do Pooler do Supabase que suporta melhor IPv4/IPv6 mistos)
-        url = url.replace(":5432", ":6543")
+    url = RAW_DATABASE_URL
     
-    # Adiciona os parâmetros necessários de SSL e timeout de conexão
+    # Se for o host padrão que está dando erro de IPv6, mudamos para o Pooler IPv4 oficial do Supabase (Região São Paulo)
+    if "db.ymqrwojkrxgozpygdjvb.supabase.co" in url:
+        url = url.replace("db.ymqrwojkrxgozpygdjvb.supabase.co:5432", "aws-0-sa-east-1.pooler.supabase.com:6543")
+    
+    # Força os parâmetros de SSL exigidos pelo Supabase
     if "sslmode" not in url:
         if "?" in url:
-            url += "&sslmode=require&connect_timeout=10"
+            url += "&sslmode=require"
         else:
-            url += "?sslmode=require&connect_timeout=10"
+            url += "?sslmode=require"
             
-    try:
-        conn = psycopg2.connect(url, cursor_factory=DictCursor)
-        return conn
-    except Exception as e:
-        print(f"Falha na conexão PostgreSQL Nuvem. Tentando fallback SQLite local... Erro: {e}")
-        import sqlite3
-        conn = sqlite3.connect('database.db')
-        conn.row_factory = sqlite3.Row
-        return conn
+    conn = psycopg2.connect(url, cursor_factory=DictCursor)
+    return conn
 
 def init_db():
     conn = get_db()
     cursor = conn.cursor()
     
-    # Verifica se estamos usando SQLite ou PostgreSQL para criar a sintaxe correta
-    is_sqlite = hasattr(conn, 'execute') or type(cursor).__name__ == 'sqlite3.Cursor'
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS numeros (
+            id INTEGER PRIMARY KEY,
+            nome TEXT DEFAULT NULL,
+            fone TEXT DEFAULT NULL
+        )
+    ''')
     
-    if is_sqlite:
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS numeros (
-                id INTEGER PRIMARY KEY,
-                nome TEXT DEFAULT NULL,
-                fone TEXT DEFAULT NULL
-            )
-        ''')
-        cursor.execute('SELECT COUNT(*) FROM numeros')
-        count = cursor.fetchone()[0]
-    else:
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS numeros (
-                id id_placeholder PRIMARY KEY,
-                nome TEXT DEFAULT NULL,
-                fone TEXT DEFAULT NULL
-            )
-        '''.replace("id_placeholder", "INTEGER"))
-        cursor.execute('SELECT COUNT(*) FROM numeros')
-        count = cursor.fetchone()[0]
-        
+    cursor.execute('SELECT COUNT(*) FROM numeros')
+    row = cursor.fetchone()
+    count = row[0] if row else 0
+    
     if count == 0:
         for i in range(1, 101):
-            if not is_sqlite and type(cursor).__name__ != 'sqlite3.Cursor':
-                cursor.execute('INSERT INTO numeros (id) VALUES (%s)', (i,))
-            else:
-                cursor.execute('INSERT INTO numeros (id) VALUES (?)', (i,))
+            cursor.execute('INSERT INTO numeros (id) VALUES (%s)', (i,))
                 
     conn.commit()
     cursor.close()
     conn.close()
 
-# Executa de forma segura
+# Executa a inicialização do banco ao ligar o app
 try:
     init_db()
 except Exception as e:
-    print(f"Erro na rotina de inicialização: {e}")
+    print(f"Erro na rotina de inicialização do banco: {e}")
 
 @app.route('/')
 def index():
@@ -110,24 +88,12 @@ def reservar():
     conn = get_db()
     cursor = conn.cursor()
     
-    # Detecta dinamicamente se a conexão ativa é SQLite ou Postgres
-    is_postgres = type(cursor).__name__ != 'sqlite3.Cursor' and not hasattr(conn, 'row_factory')
-    
-    if is_postgres:
-        cursor.execute('SELECT nome FROM numeros WHERE id = %s', (numero_id,))
-        atual = cursor.fetchone()
-        if atual and atual[0] is not None:
-            return "Este número já foi reservado por outra pessoa! Volte e escolha outro.", 400
-            
-        cursor.execute('UPDATE numeros SET nome = %s, fone = %s WHERE id = %s', (nome, fone, numero_id))
-    else:
-        cursor.execute('SELECT nome FROM numeros WHERE id = ?', (numero_id,))
-        atual = cursor.fetchone()
-        if atual and atual['nome'] is not None:
-            return "Este número já foi reservado por outra pessoa! Volte e escolha outro.", 400
-            
-        cursor.execute('UPDATE numeros SET nome = ?, fone = ? WHERE id = ?', (nome, fone, numero_id))
+    cursor.execute('SELECT nome FROM numeros WHERE id = %s', (numero_id,))
+    atual = cursor.fetchone()
+    if atual and atual[0] is not None:
+        return "Este número já foi reservado por outra pessoa! Volte e escolha outro.", 400
         
+    cursor.execute('UPDATE numeros SET nome = %s, fone = %s WHERE id = %s', (nome, fone, numero_id))
     conn.commit()
     cursor.close()
     conn.close()
@@ -176,12 +142,7 @@ def venda_manual():
     
     conn = get_db()
     cursor = conn.cursor()
-    
-    if type(cursor).__name__ != 'sqlite3.Cursor' and not hasattr(conn, 'row_factory'):
-        cursor.execute('UPDATE numeros SET nome = %s, fone = %s WHERE id = %s', (nome, fone, numero_id))
-    else:
-        cursor.execute('UPDATE numeros SET nome = ?, fone = ? WHERE id = ?', (nome, fone, numero_id))
-        
+    cursor.execute('UPDATE numeros SET nome = %s, fone = %s WHERE id = %s', (nome, fone, numero_id))
     conn.commit()
     cursor.close()
     conn.close()
@@ -194,12 +155,7 @@ def liberar(numero_id):
         
     conn = get_db()
     cursor = conn.cursor()
-    
-    if type(cursor).__name__ != 'sqlite3.Cursor' and not hasattr(conn, 'row_factory'):
-        cursor.execute('UPDATE numeros SET nome = NULL, fone = NULL WHERE id = %s', (numero_id,))
-    else:
-        cursor.execute('UPDATE numeros SET nome = NULL, fone = NULL WHERE id = ?', (numero_id,))
-        
+    cursor.execute('UPDATE numeros SET nome = NULL, fone = NULL WHERE id = %s', (numero_id,))
     conn.commit()
     cursor.close()
     conn.close()
