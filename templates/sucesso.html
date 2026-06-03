@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reserva Confirmada! 🎉</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Nunito', Arial, sans-serif;
+            background: #f0f4f8;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .card-sucesso {
+            background: #ffffff;
+            max-width: 500px;
+            width: 100%;
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        .icone {
+            font-size: 3.5rem;
+            margin-bottom: 16px;
+        }
+
+        h2 {
+            color: #2f855a;
+            font-size: 1.6rem;
+            margin-bottom: 12px;
+        }
+
+        p {
+            color: #4a5568;
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+
+        .detalhes {
+            background: #f7fafc;
+            border: 1px dashed #cbd5e0;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+
+        .detalhes div {
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .detalhes div:last-child {
+            margin-bottom: 0;
+        }
+
+        .detalhes strong {
+            color: #1a202c;
+        }
+
+        .btn-whats {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 14px;
+            background: #25d366;
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+            transition: all 0.2s;
+            margin-bottom: 12px;
+        }
+
+        .btn-whats:hover {
+            background: #1ebd57;
+            transform: translateY(-1px);
+        }
+
+        .btn-voltar {
+            display: inline-block;
+            color: #718096;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .btn-voltar:hover {
+            color: #4a5568;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card-sucesso">
+    <div class="icone">🎉</div>
+    <h2>Número Reservado com Sucesso!</h2>
+    <p>Obrigado por apoiar a nossa causa! Para garantir a sua participação, faça o pagamento e envie o comprovante clicando no botão abaixo.</p>
+
+    <div class="detalhes">
+        <div><strong>👤 Comprador:</strong> {{ nome }}</div>
+        {% if fone %}
+            <div><strong>📱 WhatsApp:</strong> {{ fone }}</div>
+        {% endif %}
+        <div><strong>🎫 Número Escolhido:</strong> <span style="background: #e53e3e; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 900;">{{ numero }}</span></div>
+    </div>
+
+    <a href="https://api.whatsapp.com/send?phone=5511976872975&text=Olá! Acabei de reservar o número {{ numero }} na Rifa Solidária no nome de {{ nome }}. Segue o comprovante!" 
+       target="_blank" 
+       class="btn-whats">
+        💬 Enviar Comprovante por WhatsApp
+    </a>
+
+    <a href="/" class="btn-voltar">⬅ Voltar para a Rifa</a>
+</div>
+
+</body>
+</html> 

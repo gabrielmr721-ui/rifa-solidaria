@@ -5,10 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rifa Solidária</title>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
-
     <style>
-        /* ── Reset & base ── */
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
         body {
             font-family: 'Nunito', Arial, sans-serif;
@@ -16,220 +18,207 @@
             color: #2d3748;
         }
 
-        /* ── Topo com imagem ── */
-        .topo {
-            background: linear-gradient(135deg, #1a472a 0%, #2d6a4f 100%);
-            padding: 30px 20px 40px;
-            text-align: center;
-        }
-
-        .imagem-rifa {
-            max-width: 500px;
-            width: 92%;
-            border-radius: 16px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.35);
-            border: 4px solid rgba(255,255,255,0.2);
-        }
-
-        .topo h1 {
-            color: #fff;
-            font-size: 2rem;
-            font-weight: 900;
-            margin-top: 20px;
-            text-shadow: 0 2px 6px rgba(0,0,0,0.3);
-        }
-
-        .topo p {
-            color: rgba(255,255,255,0.85);
-            margin-top: 8px;
-            font-size: 1.05rem;
-        }
-
-        /* ── Contadores ── */
-        .contadores {
+        /* Topo da Página */
+        header {
+            background: #1a202c;
+            color: #ffffff;
+            padding: 18px 24px;
             display: flex;
-            justify-content: center;
-            gap: 20px;
+            align-items: center;
+            justify-content: space-between;
             flex-wrap: wrap;
-            padding: 24px 20px;
-            background: #fff;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+            gap: 12px;
         }
 
-        .contador-box {
+        header h1 {
+            font-size: 1.3rem;
+        }
+
+        .btn-admin {
+            background: #4a5568;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+
+        .btn-admin:hover {
+            background: #2d3748;
+        }
+
+        /* Container Principal */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 24px 16px;
+        }
+
+        /* Banner/Imagem Central */
+        .banner-container {
             text-align: center;
-            padding: 14px 30px;
+            margin-bottom: 24px;
+        }
+
+        .banner-container img {
+            max-width: 100%;
+            height: auto;
             border-radius: 12px;
-            min-width: 130px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
         }
 
-        .contador-box.verde  { background: #d4edda; color: #155724; }
-        .contador-box.vermelho { background: #f8d7da; color: #721c24; }
+        /* Painel de Placar/Estatísticas */
+        .status-card {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            margin-bottom: 24px;
+        }
 
-        .contador-box .numero-grande {
-            font-size: 2.2rem;
+        .status-item h3 {
+            font-size: 1.8rem;
             font-weight: 900;
-            line-height: 1;
         }
 
-        .contador-box .label {
+        .status-item p {
             font-size: 0.85rem;
-            margin-top: 4px;
+            color: #718096;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
-        /* ── Instrução ── */
-        .instrucao {
-            text-align: center;
-            padding: 18px 20px 8px;
-            font-size: 1rem;
-            color: #4a5568;
-        }
+        .text-vendidos { color: #e53e3e; }
+        .text-livres { color: #38a169; }
 
-        /* ── Grid de números ── */
-        .grade {
+        /* Grade de Números */
+        .grid-numeros {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
             gap: 10px;
-            padding: 16px 20px 40px;
-            max-width: 700px;
-            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
         }
 
-        .num-btn {
+        .card-numero {
+            aspect-ratio: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 60px;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            border: none;
-            cursor: pointer;
-            transition: transform 0.15s, box-shadow 0.15s;
-            text-decoration: none;
-        }
-
-        /* Disponível — verde */
-        .num-btn.livre {
-            background: #38a169;
-            color: #fff;
-            box-shadow: 0 4px 10px rgba(56,161,105,0.35);
-        }
-        .num-btn.livre:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 7px 18px rgba(56,161,105,0.45);
-        }
-
-        /* Vendido — cinza */
-        .num-btn.vendido {
-            background: #cbd5e0;
-            color: #718096;
-            cursor: default;
-            box-shadow: none;
-        }
-
-        /* ── WhatsApp flutuante ── */
-        .btn-whatsapp {
-            position: fixed;
-            bottom: 22px;
-            right: 22px;
-            background: #25d366;
-            color: #fff;
-            padding: 14px 22px;
-            border-radius: 50px;
             font-weight: 900;
-            font-size: 1rem;
+            font-size: 1.1rem;
+            border-radius: 8px;
             text-decoration: none;
-            box-shadow: 0 6px 20px rgba(37,211,102,0.45);
+            transition: all 0.2s;
+        }
+
+        .num-livre {
+            background: #e6fffa;
+            border: 2px solid #38a169;
+            color: #234e52;
+            cursor: pointer;
+        }
+
+        .num-livre:hover {
+            background: #38a169;
+            color: #ffffff;
+            transform: scale(1.05);
+        }
+
+        .num-vendido {
+            background: #edf2f7;
+            border: 2px solid #cbd5e0;
+            color: #a0aec0;
+            cursor: not-allowed;
+            position: relative;
+        }
+
+        /* Legenda */
+        .legenda {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .legenda-item {
             display: flex;
             align-items: center;
-            gap: 10px;
-            z-index: 999;
-            transition: transform 0.2s;
+            gap: 8px;
         }
-        .btn-whatsapp:hover { transform: scale(1.06); }
-        .btn-whatsapp svg  { width: 24px; height: 24px; fill: #fff; }
 
-        /* ── Footer ── */
+        .quadradinho {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+        }
+
         footer {
             text-align: center;
-            padding: 20px;
+            padding: 32px;
             color: #a0aec0;
             font-size: 0.85rem;
-        }
-
-        /* ── Responsivo ── */
-        @media (max-width: 480px) {
-            .grade { grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 12px; }
-            .num-btn { height: 52px; font-size: 1rem; border-radius: 8px; }
-            .topo h1 { font-size: 1.5rem; }
         }
     </style>
 </head>
 <body>
 
-<!-- ── TOPO COM IMAGEM ── -->
-<div class="topo">
-    <img
-        src="{{ url_for('static', filename='imagens/rifa.jpg') }}"
-        class="imagem-rifa"
-        alt="Imagem da Rifa Solidária">
-
-    <h1>🎟️ Rifa Solidária</h1>
-    <p>Escolha seu número e faça sua parte!</p>
-</div>
-
-<!-- ── CONTADORES ── -->
-<div class="contadores">
-    <div class="contador-box verde">
-        <div class="numero-grande">{{ disponiveis }}</div>
-        <div class="label">✅ Disponíveis</div>
+<header>
+    <h1>🎫 Rifa Solidária</h1>
+    <div>
+        <a href="/admin" class="btn-admin">⚙️ Acessar Painel</a>
     </div>
-    <div class="contador-box vermelho">
-        <div class="numero-grande">{{ vendidos }}</div>
-        <div class="label">🔴 Vendidos</div>
+</header>
+
+<div class="container">
+    <div class="status-card">
+        <div class="status-item">
+            <h3 class="text-vendidos">{{ vendidos }}</h3>
+            <p>Vendidos</p>
+        </div>
+        <div class="status-item">
+            <h3 class="text-livres">{{ livres }}</h3>
+            <p>Disponíveis</p>
+        </div>
+    </div>
+
+    <div class="grid-numeros">
+        {% for numero in numeros %}
+            {% if numero['nome'] is none %}
+                <a href="/reservar/{{ numero['id'] }}" class="card-numero num-livre" title="Clique para reservar o número {{ numero['id'] }}">
+                    {{ numero['id'] }}
+                </a>
+            {% else %}
+                <div class="card-numero num-vendido" title="Número {{ numero['id'] }} já foi vendido">
+                    {{ numero['id'] }}
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <div class="legenda">
+        <div class="legenda-item">
+            <div class="quadradinho" style="background: #e6fffa; border: 2px solid #38a169;"></div>
+            <span>Livre (Disponível)</span>
+        </div>
+        <div class="legenda-item">
+            <div class="quadradinho" style="background: #edf2f7; border: 2px solid #cbd5e0;"></div>
+            <span>Vendido / Reservado</span>
+        </div>
     </div>
 </div>
 
-<!-- ── INSTRUÇÃO ── -->
-<p class="instrucao">
-    🟢 Clique num número <strong>verde</strong> para reservar o seu!
-</p>
-
-<!-- ── GRADE DE NÚMEROS ── -->
-<div class="grade">
-    {% for numero in numeros %}
-        {% if numero['nome'] is none %}
-            <!-- Número disponível: leva para a página de reserva -->
-            <a href="/reservar/{{ numero['id'] }}" class="num-btn livre">
-                {{ numero['id'] }}
-            </a>
-        {% else %}
-            <!-- Número vendido: só exibe cinza -->
-            <span class="num-btn vendido" title="Reservado por {{ numero['nome'] }}">
-                {{ numero['id'] }}
-            </span>
-        {% endif %}
-    {% endfor %}
-</div>
-
-<!-- ── BOTÃO WHATSAPP FLUTUANTE ── -->
-<a
-    href="https://wa.me/5511976872975?text=Ol%C3%A1%21+Gostaria+de+comprar+um+n%C3%BAmero+da+rifa."
-    target="_blank"
-    class="btn-whatsapp">
-    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-    </svg>
-    Comprar pelo WhatsApp
-</a>
-
-<footer>
-    Rifa Solidária &copy; 2025 — Todos os direitos reservados
-</footer>
+<footer>Rifa Solidária — Todos os direitos reservados.</footer>
 
 </body>
 </html>

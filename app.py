@@ -1,243 +1,136 @@
-from flask import Flask, render_template, request, redirect, session, url_for
-import sqlite3
 import os
+import sqlite3
+from flask import Flask, render_template, request, redirect, session
+from dotenv import load_dotenv
+
+# Carrega as variáveis do arquivo oculto .env
+load_dotenv()
 
 app = Flask(__name__)
+# Chave secreta para gerenciar os cookies da sessão de forma segura
+app.secret_key = os.getenv('SECRET_KEY', 'chave-secreta-provisoria-rifa')
 
-# Chave secreta para as sessões (troque por algo único)
-app.secret_key = os.environ.get("SECRET_KEY", "chave_secreta_padrao_mude_isso")
-
-# Senha do admin — defina a variável ADMIN_PASSWORD no Render (mais seguro)
-SENHA_ADMIN = os.environ.get("ADMIN_PASSWORD", "admin123")
-
-# ─────────────────────────────────────────────
-# BANCO DE DADOS
-# ─────────────────────────────────────────────
+DATABASE = 'database.db'
 
 def get_db():
-    """Abre conexão com o banco SQLite."""
-    conn = sqlite3.connect("/data/database.db")
-    conn.row_factory = sqlite3.Row  # permite acessar colunas pelo nome
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row
     return conn
 
 def init_db():
-    """Cria a tabela de números caso ainda não exista."""
-    conn = get_db()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS numeros (
-            id    INTEGER PRIMARY KEY,
-            nome  TEXT,
-            fone  TEXT
-        )
-    """)
-
-    # Popula com 100 números se a tabela estiver vazia
-    cursor.execute("SELECT COUNT(*) FROM numeros")
-    if cursor.fetchone()[0] == 0:
-        for i in range(1, 101):
-            cursor.execute(
-                "INSERT INTO numeros (id, nome, fone) VALUES (?, NULL, NULL)",
-                (i,)
+    with get_db() as conn:
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS numeros (
+                id INTEGER PRIMARY KEY,
+                nome TEXT DEFAULT NULL,
+                fone TEXT DEFAULT NULL
             )
+        ''')
+        # Garante a criação de 100 números caso o banco esteja vazio
+        cursor = conn.execute('SELECT COUNT(*) FROM numeros')
+        if cursor.fetchone()[0] == 0:
+            for i in range(1, 101):
+                conn.execute('INSERT INTO numeros (id) VALUES (?)', (i,))
+        conn.commit()
 
-    conn.commit()
-    conn.close()
-
-# Inicializa o banco ao subir a aplicação
 init_db()
 
-
-# ─────────────────────────────────────────────
-# PÁGINA PRINCIPAL
-# ─────────────────────────────────────────────
-
-@app.route("/")
+@app.route('/')
 def index():
-    conn = get_db()
-    cursor = conn.cursor()
+    with get_db() as conn:
+        numeros = conn.execute('SELECT * FROM numeros').fetchall()
+        vendidos = conn.execute('SELECT COUNT(*) FROM numeros WHERE nome IS NOT NULL').fetchone()[0]
+        livres = 100 - vendidos
+    return render_template('index.html', numeros=numeros, vendidos=vendidos, livres=livres)
 
-    cursor.execute("SELECT * FROM numeros ORDER BY id")
-    numeros = cursor.fetchall()
-    conn.close()
+@app.route('/reservar/<int:numero_id>')
+def tela_reserva(numero_id):
+    return render_template('reservar.html', numero_id=numero_id)
 
-    # Conta disponíveis e vendidos
-    disponiveis = sum(1 for n in numeros if n["nome"] is None)
-    vendidos    = len(numeros) - disponiveis
-
-    return render_template(
-        "index.html",
-        numeros=numeros,
-        disponiveis=disponiveis,
-        vendidos=vendidos
-    )
-
-
-# ─────────────────────────────────────────────
-# COMPRA ONLINE (cliente clica no número)
-# ─────────────────────────────────────────────
-
-@app.route("/reservar/<int:id_numero>", methods=["GET", "POST"])
-def reservar(id_numero):
-    conn = get_db()
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT * FROM numeros WHERE id = ?", (id_numero,))
-    numero = cursor.fetchone()
-
-    if numero is None or numero["nome"] is not None:
-        conn.close()
-        return redirect("/")
-
-    if request.method == "POST":
-        nome = request.form.get("nome", "").strip()
-        fone = request.form.get("fone", "").strip()
-
-        if nome:
-            cursor.execute(
-                "UPDATE numeros SET nome = ?, fone = ? WHERE id = ?",
-                (nome, fone, id_numero)
-            )
-            conn.commit()
-            conn.close()
-            return redirect("/")
-
-    conn.close()
-    return render_template("reservar.html", numero=id_numero)
-
-
-# ─────────────────────────────────────────────
-# LOGIN DO ADMIN
-# ─────────────────────────────────────────────
-
-@app.route("/admin", methods=["GET", "POST"])
-def admin():
-    erro = None
-
-    if request.method == "POST":
-        senha = request.form.get("senha", "")
-
-        if senha == SENHA_ADMIN:
-            session["admin"] = True
-            return redirect("/painel")
-        else:
-            erro = "Senha incorreta. Tente novamente."
-
-    return render_template("admin.html", erro=erro)
-
-
-# ─────────────────────────────────────────────
-# PAINEL ADMINISTRATIVO
-# ─────────────────────────────────────────────
-
-@app.route("/painel")
-def painel():
-    if not session.get("admin"):
-        return redirect("/admin")
-
-    conn = get_db()
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT * FROM numeros ORDER BY id")
-    numeros = cursor.fetchall()
-    conn.close()
-
-    disponiveis = sum(1 for n in numeros if n["nome"] is None)
-    vendidos    = len(numeros) - disponiveis
-
-    return render_template(
-        "painel.html",
-        numeros=numeros,
-        disponiveis=disponiveis,
-        vendidos=vendidos
-    )
-
-
-# ─────────────────────────────────────────────
-# VENDA MANUAL (admin registra venda do WhatsApp)
-# ─────────────────────────────────────────────
-
-@app.route("/venda_manual", methods=["POST"])
-def venda_manual():
-    if not session.get("admin"):
-        return redirect("/admin")
-
-    numero = request.form.get("numero")
-    nome   = request.form.get("nome", "").strip()
-    fone   = request.form.get("fone", "").strip()
-
-    if numero and nome:
-        conn = get_db()
-        cursor = conn.cursor()
-
-        cursor.execute(
-            "UPDATE numeros SET nome = ?, fone = ? WHERE id = ? AND nome IS NULL",
-            (nome, fone, numero)
-        )
-
+@app.route('/reservar', method=['POST'])
+def reservar():
+    numero_id = request.form.get('numero_id')
+    nome = request.form.get('nome')
+    fone = request.form.get('fone')
+    
+    with get_db() as conn:
+        # Verifica se o número já não foi comprado por outra pessoa nesse meio tempo
+        atual = conn.execute('SELECT nome FROM numeros WHERE id = ?', (numero_id,)).fetchone()
+        if atual and atual['nome'] is not None:
+            return "Este número já foi reservado por outra pessoa! Volte e escolha outro.", 400
+            
+        conn.execute('UPDATE numeros SET nome = ?, fone = ? WHERE id = ?', (nome, fone, numero_id))
         conn.commit()
-        conn.close()
+        
+    return render_template('sucesso.html', nome=nome, fone=fone, numero=numero_id)
 
-    return redirect("/painel")
+@app.route('/admin', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        senha_digitada = request.form.get('senha')
+        # Busca a senha segura da variável de ambiente (Usa 'Eugenio' como plano B caso não ache)
+        senha_correta = os.getenv('ADMIN_PASSWORD', 'Eugenio')
+        
+        if senha_digitada == senha_correta:
+            session['admin_logado'] = True
+            return redirect('/painel')
+        else:
+            return render_template('admin.html', erro=True)
+            
+    return render_template('admin.html', erro=False)
 
+@app.route('/painel')
+def painel():
+    if not session.get('admin_logado'):
+        return redirect('/admin')
+        
+    with get_db() as conn:
+        numeros = conn.execute('SELECT * FROM numeros').fetchall()
+        vendidos = conn.execute('SELECT COUNT(*) FROM numeros WHERE nome IS NOT NULL').fetchone()[0]
+        
+    return render_template('painel.html', numeros=numeros, vendidos=vendidos)
 
-# ─────────────────────────────────────────────
-# LIBERAR UM NÚMERO ESPECÍFICO
-# ─────────────────────────────────────────────
+@app.route('/venda_manual', methods=['POST'])
+def venda_manual():
+    if not session.get('admin_logado'):
+        return redirect('/admin')
+        
+    nome = request.form.get('nome')
+    fone = request.form.get('fone')
+    numero_id = request.form.get('numero')
+    
+    with get_db() as conn:
+        conn.execute('UPDATE numeros SET nome = ?, fone = ? WHERE id = ?', (nome, fone, numero_id))
+        conn.commit()
+        
+    return redirect('/painel')
 
-@app.route("/liberar/<int:id_numero>")
-def liberar(id_numero):
-    if not session.get("admin"):
-        return redirect("/admin")
+@app.route('/liberar/<int:numero_id>')
+def liberar(numero_id):
+    if not session.get('admin_logado'):
+        return redirect('/admin')
+        
+    with get_db() as conn:
+        conn.execute('UPDATE numeros SET nome = NULL, fone = NULL WHERE id = ?', (numero_id,))
+        conn.commit()
+        
+    return redirect('/painel')
 
-    conn = get_db()
-    cursor = conn.cursor()
-
-    cursor.execute(
-        "UPDATE numeros SET nome = NULL, fone = NULL WHERE id = ?",
-        (id_numero,)
-    )
-
-    conn.commit()
-    conn.close()
-
-    return redirect("/painel")
-
-
-# ─────────────────────────────────────────────
-# RESETAR TODA A RIFA
-# ─────────────────────────────────────────────
-
-@app.route("/resetar")
+@app.route('/resetar')
 def resetar():
-    if not session.get("admin"):
-        return redirect("/admin")
+    if not session.get('admin_logado'):
+        return redirect('/admin')
+        
+    with get_db() as conn:
+        conn.execute('UPDATE numeros SET nome = NULL, fone = NULL')
+        conn.commit()
+        
+    return redirect('/painel')
 
-    conn = get_db()
-    cursor = conn.cursor()
-
-    cursor.execute("UPDATE numeros SET nome = NULL, fone = NULL")
-
-    conn.commit()
-    conn.close()
-
-    return redirect("/painel")
-
-
-# ─────────────────────────────────────────────
-# LOGOUT
-# ─────────────────────────────────────────────
-
-@app.route("/logout")
+@app.route('/logout')
 def logout():
-    session.clear()
-    return redirect("/")
+    session.pop('admin_logado', None)
+    return redirect('/')
 
-
-# ─────────────────────────────────────────────
-# RODAR LOCALMENTE
-# ─────────────────────────────────────────────
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run(debug=True)

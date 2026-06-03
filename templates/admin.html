@@ -3,15 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login Admin</title>
+    <title>Login Administrativo</title>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
-
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
         body {
             font-family: 'Nunito', Arial, sans-serif;
-            background: #1a202c;
+            background: #f0f4f8;
+            color: #2d3748;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -19,98 +23,158 @@
             padding: 20px;
         }
 
-        .card {
-            background: #2d3748;
-            border-radius: 16px;
-            padding: 40px 36px;
-            max-width: 380px;
+        .card-login {
+            background: #ffffff;
+            max-width: 400px;
             width: 100%;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            padding: 32px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
             text-align: center;
         }
 
-        .icone { font-size: 3rem; margin-bottom: 12px; }
-
         h2 {
-            color: #e2e8f0;
             font-size: 1.4rem;
-            margin-bottom: 28px;
+            margin-bottom: 20px;
+            color: #1a202c;
         }
 
-        input[type="password"] {
+        .campo {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        .campo label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #4a5568;
+        }
+
+        /* Container que alinha o input e o botão do olhinho */
+        .input-senha-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        input {
             width: 100%;
-            padding: 12px 14px;
-            background: #1a202c;
-            border: 2px solid #4a5568;
-            border-radius: 10px;
-            color: #e2e8f0;
-            font-size: 1rem;
+            padding: 12px;
+            padding-right: 45px; /* Espaço para o botão não cobrir o texto */
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
             font-family: inherit;
-            margin-bottom: 16px;
-            transition: border-color 0.2s;
-        }
-        input[type="password"]:focus {
-            outline: none;
-            border-color: #68d391;
+            font-size: 1rem;
+            background-color: #ffffff;
         }
 
-        button {
-            width: 100%;
-            padding: 13px;
-            background: #38a169;
-            color: #fff;
-            font-size: 1rem;
-            font-weight: 900;
+        input:focus {
+            outline: none;
+            border-color: #4a5568;
+        }
+
+        /* O botão do olhinho propriamente dito */
+        .btn-mostrar-senha {
+            position: absolute;
+            right: 12px;
+            background: none;
             border: none;
-            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: #718096;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none; /* Impede que o usuário selecione o emoji */
+        }
+
+        .btn-mostrar-senha:hover {
+            color: #2d3748;
+        }
+
+        .btn-entrar {
+            width: 100%;
+            padding: 12px;
+            background: #1a202c;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
             cursor: pointer;
             transition: background 0.2s;
         }
-        button:hover { background: #2f855a; }
 
-        .erro {
-            background: #fc8181;
-            color: #742a2a;
-            padding: 10px 14px;
-            border-radius: 8px;
-            margin-bottom: 16px;
+        .btn-entrar:hover {
+            background: #2d3748;
+        }
+
+        .erro-msg {
+            color: #e53e3e;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
             font-weight: 700;
-            font-size: 0.9rem;
         }
 
-        .voltar {
-            display: block;
-            margin-top: 18px;
-            color: #718096;
+        .btn-voltar {
+            display: inline-block;
+            margin-top: 15px;
+            color: #a0aec0;
             text-decoration: none;
-            font-size: 0.88rem;
+            font-size: 0.85rem;
         }
-        .voltar:hover { color: #a0aec0; }
+
+        .btn-voltar:hover {
+            color: #718096;
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <div class="icone">🔐</div>
-    <h2>Painel Administrativo</h2>
+<div class="card-login">
+    <h2>🔒 Login Administrativo</h2>
 
     {% if erro %}
-        <div class="erro">{{ erro }}</div>
+        <p class="erro-msg">❌ Senha incorreta! Tente novamente.</p>
     {% endif %}
 
-    <form method="POST">
-        <input
-            type="password"
-            name="senha"
-            placeholder="Digite a senha"
-            autofocus
-            required>
+    <form action="/admin" method="POST">
+        <div class="campo">
+            <label for="password">Digite a Senha de Acesso</label>
+            <div class="input-senha-container">
+                <input type="password" id="password" name="senha" required placeholder="Sua senha...">
+                <button type="button" class="btn-mostrar-senha" id="togglePassword" title="Mostrar/Esconder senha">
+                    👁️
+                </button>
+            </div>
+        </div>
 
-        <button type="submit">Entrar</button>
+        <button type="submit" class="btn-entrar">🔓 Entrar no Painel</button>
     </form>
 
-    <a href="/" class="voltar">← Voltar para a rifa</a>
+    <a href="/" class="btn-voltar">⬅ Voltar para a Rifa</a>
 </div>
+
+<script>
+    const passwordInput = document.getElementById('password');
+    const togglePasswordButton = document.getElementById('togglePassword');
+
+    togglePasswordButton.addEventListener('click', function () {
+        // Se for password, muda para text (mostra). Se for text, muda para password (esconde).
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            togglePasswordButton.textContent = '🙈'; // Muda o emoji para o macaquinho tapando os olhos
+        } else {
+            passwordInput.type = 'password';
+            togglePasswordButton.textContent = '👁️'; // Volta para o olhinho normal
+        }
+    }); 
+</script>
 
 </body>
 </html>
